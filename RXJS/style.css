@@ -1,0 +1,159 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+
+}
+
+:root, html, body {
+    width: 100%;
+    min-height: 100%;
+}
+
+.heroInput {
+    width: 18%;
+}
+.sideButton {
+    width: 5%;
+}
+.mainDiv {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(25, 15, 15);
+    color: white
+}
+
+.sideTitles {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    color: red;
+    font-size: 40px;
+    font-weight: 800;
+    text-shadow: 2px 2px 12px  white;
+
+}
+
+.selectionDiv {
+    width: 95%;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.selectionDiv > input {
+    display: block;
+}
+
+.heroInputDiv {
+    display: flex;
+    justify-content: space-evenly;
+    width: 40%;
+}
+
+
+.miniMap {
+    height: 400px;
+    width: 400px;
+    background-image: url(./Minimap.webp);
+    margin: 70px auto 0 auto;
+    position: relative;
+}
+
+
+.countersDisplay {
+    background-color: brown;
+    width: 350px;
+    min-height: 350px;
+    border: 4px solid black;
+    margin: 50px auto 20px auto
+}
+.countersRow {
+    display: flex;
+    justify-content: space-around;
+    align-items:  center;
+}
+
+.countersDisplay h1 {
+    margin-bottom: 20px;
+    padding-left: 20px;
+    padding-top: 20px
+}
+.countersRow p {
+    font-size: 25px;
+    font-weight: 600;
+
+}
+
+.countersRow img {
+    width: 70px;
+    height: 70px;
+    border-radius: 40px;
+    border: 6px solid black
+}
+
+.icon {
+    width: 45px;
+    height: 45px;
+    border: 10px;
+    border: 2px solid black;
+}
+
+.radientMid {
+    position: absolute;
+    top: 220px;
+    left:132px;
+}
+
+.direMid {
+    position: absolute;
+    top:145px;
+    left:200px;
+}
+
+.radientOfflaner {
+    position: absolute;
+    top:110px;
+    left:27px;
+}
+.radientSupport {
+    position: absolute;
+    top: 165px;
+    left: 27px;
+}
+
+.direCarry {
+    position: absolute;
+    top: 25px;
+    left: 60px;
+}
+
+.direHardSupport {
+    position: absolute;
+    top: 25px;
+    left: 115px;
+}
+
+.direOfflaner {
+    position: absolute;
+    top: 220px;
+    left: 324px;
+}
+.direSupport {
+    position: absolute;
+    top: 170px;
+    left: 324px;
+}
+
+.radientCarry{
+    position: absolute;
+    top: 310px;
+    left: 300px;
+}
+
+.radientHardSupport {
+    position: absolute;
+    top: 310px;
+    left: 250px;
+}

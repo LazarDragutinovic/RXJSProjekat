@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "webpack": "webpack --watch --config webpack.config.js",
-    "api": "json-server --watch movies-db.json"
+    "api": "json-server --watch Heroes.json"
   },
   "author": "",
   "license": "ISC",
