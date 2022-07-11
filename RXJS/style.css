@@ -20,7 +20,8 @@
     width: 100%;
     height: 100%;
     background-color: rgb(25, 15, 15);
-    color: white
+    color: white;
+    padding: 20px;
 }
 
 .sideTitles {
@@ -51,7 +52,20 @@
     justify-content: space-evenly;
     width: 40%;
 }
+.inputField {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
 
+.observableData {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.inputField input {
+    width: 200px;
+}
 
 .miniMap {
     height: 400px;
@@ -64,7 +78,7 @@
 
 .countersDisplay {
     background-color: brown;
-    width: 350px;
+    width: 320px;
     min-height: 350px;
     border: 4px solid black;
     margin: 50px auto 20px auto
@@ -81,7 +95,7 @@
     padding-top: 20px
 }
 .countersRow p {
-    font-size: 25px;
+    font-size: 20px;
     font-weight: 600;
 
 }
@@ -156,4 +170,47 @@
     position: absolute;
     top: 310px;
     left: 250px;
+}
+
+.sinergiesDisplay {
+ width: 320px;
+ background-color: rgb(14, 67, 160);   
+ min-height: 350px;
+ border: 4px solid black;
+ margin: 50px auto 20px auto
+}
+
+.radnomHeroes {
+    position: fixed;
+    width: 800px;
+    height: 300px;
+    top: 200px;
+    display: flex;
+    align-items: center;
+    left: calc( 50vw - 400px );
+    background-color: blue;
+    box-shadow: 0px 10px 10px black;
+}
+
+.heroInfoBig {
+    width: 120px;
+    margin-left: 15px;
+
+}
+
+.statsDiv {
+    border: 1px solid black;
+}
+
+.UkloniRandomHeroes {
+    width: 25px;
+    height: 25px;
+    background-color: red;
+    color:white;
+    margin-left: 15px;
+}
+
+.heroInfoBig img {
+    width: 100%;
+    height: 200px;
 }
