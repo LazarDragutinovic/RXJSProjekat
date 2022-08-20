@@ -1,19 +1,47 @@
-import { combineLatest, debounceTime, filter, from, fromEvent, map, Observable, pairwise, startWith, switchMap, tap } from "rxjs";
+import { combineLatest, debounceTime, filter, from, fromEvent, map, merge, Observable, pairwise, startWith, Subject, switchMap, tap } from "rxjs";
+import ReactiveInput from "../components/ReactiveInput";
 import Hero from "../Models/hero";
 import statistika from "../models/statistika";
 
 
+let startingHeroes:any[] = [null,null, null, null, null,null,null,null,null,null];
 
 
-function createAllHeroesObservables(inps: HTMLInputElement[]) : Observable<Hero[]> {
+let filterDuplikata = (heroes: Hero[])=>{
+    console.log(heroes);
+    for(let i = 0; i < heroes.length-1; i++) {
+        if(!heroes[i]) continue;
+        for(let j = 0; j < heroes.length;j++) {
+            if(!heroes[j]) continue;
+            if(i !== j) {
+                if(heroes[i].id === heroes[j].id) return false;
+            }
+        }
+    }   
+    return true;
+}
+
+export function createAllReactiveHeroObservables(inputs: ReactiveInput[] ): Observable<Hero[]>{
+    let reactiveHeroObservables$ = inputs.map(input=> input.getHeroObs());
+    return combineLatest([...reactiveHeroObservables$])
+            .pipe(filter(filterDuplikata));
+}
+
+function createAllHeroesObservables(inps: ReactiveInput[]) : Observable<Hero[]> {
     let allObservables : Observable<Hero>[] = [];
     let heroObservable : Observable<Hero>;
 
-    inps.forEach(inp=>{
-        heroObservable = createHeroObservable(inp);
-        allObservables.push(heroObservable);
-    })
-    return combineLatest(allObservables).pipe(filter(x=>{
+    heroObservable = inps[0].getHeroObs();
+    console.log("HEre")
+
+    heroObservable.subscribe(x=>console.log(x));
+    combineLatest([inps[0].getHeroObs()]).subscribe(hero=>console.log(hero));
+
+    for(let i = 0; i < 5; i++) {
+        allObservables.push(inps[i].getHeroObs());
+    }
+
+    return combineLatest(allObservables).pipe(startWith(startingHeroes),filter(x=>{
         let ponovljeno = false;
         for(let i = 0; i < 5; i++) {
             if(!x[i]) continue;
@@ -35,7 +63,7 @@ function createAllHeroesObservables(inps: HTMLInputElement[]) : Observable<Hero[
 
 function allSelected(heroes: Hero[]) {
     let allOk = true;
-    console.log(heroes)
+   
     for(let i = 0; i < 10; i++) {
         
         if(!heroes[i]){
@@ -43,7 +71,7 @@ function allSelected(heroes: Hero[]) {
             break;
         }
     }
-    console.log(allOk)
+    
     return allOk
 }
 
@@ -61,7 +89,7 @@ function racunajStatistiku(heroes:Hero[]):statistika {
     let direOfflaner = 0;
     let direHardSuport = 0;
 
-    console.log(heroes)
+   
     for(let i = 0; i < 5; i++) {
         radientCarry += heroes[i].carry;
         radientHardSuport += heroes[i].hardSuport;
@@ -127,7 +155,7 @@ function createHeroObservable(inp:HTMLInputElement) : Observable<Hero> {
 }
 
 function getHero(name: string) :Observable<Hero[]>  {
-    let promise : Promise<Hero[]> = fetch('http://localhost:3000/hero/?name='+name)
+    let promise : Promise<Hero[]> = fetch('http://localhost:3000/hero')
                     .then((resp)=>{
                         if(resp.ok) {
                             return resp.json();
@@ -135,10 +163,11 @@ function getHero(name: string) :Observable<Hero[]>  {
                         else throw new Error("No hero");
                     })
                     .catch(err=>alert("No Hero."));
-    return from(promise);
+
+    return from(promise).pipe(map(heroes=>heroes.filter(hero=>hero.name.includes(name))));
 }
 
-function getHeroById(id: number) : Observable<Hero[]> {
+function getHeroById(id: number | string) : Observable<Hero[]> {
     let promise : Promise<Hero[]> = fetch("http://localhost:3000/hero/?id="+id)
                                     .then(resp=>{
                                         if(resp.ok) return resp.json()

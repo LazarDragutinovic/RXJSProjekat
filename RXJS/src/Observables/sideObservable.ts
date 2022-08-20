@@ -1,4 +1,5 @@
 import { debounceTime, fromEvent, map, merge, mergeMap } from "rxjs";
+import { Side } from "../models/side";
 
 
 
@@ -6,11 +7,11 @@ import { debounceTime, fromEvent, map, merge, mergeMap } from "rxjs";
 function createSideObservable(radientInput: HTMLInputElement, direInput : HTMLInputElement) {
     let radientObs = fromEvent(radientInput, "input").pipe(
         debounceTime(500),
-        map(ev => (<HTMLInputElement>ev.target).value),
+        map(ev => Side.Radient),
     )
     let direObs = fromEvent(direInput,"input").pipe(
         debounceTime(500),
-        map(ev=>(<HTMLInputElement>ev.target).value)
+        map(ev=>Side.Dire)
     )
     return merge(radientObs,direObs);
 }

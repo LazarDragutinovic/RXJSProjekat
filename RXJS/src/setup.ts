@@ -1,5 +1,6 @@
 import { Chart } from "chart.js";
-import { combineLatest, filter, Observable } from "rxjs";
+import { combineLatest, filter, forkJoin, fromEvent, map, merge, Observable, Subject } from "rxjs";
+import ReactiveInput from "./components/ReactiveInput";
 import Counter from "./models/counter";
 import Hero from "./Models/hero";
 import { Sinergy } from "./models/sinergy";
@@ -8,16 +9,19 @@ import createHeroObservable, { allSelected, racunajStatistiku } from "./Observab
 import createRandomHeroObservable from "./Observables/randomHeroObservable";
 
 
+let sideHeroPosSelect = new Subject<[Hero,string]>();
 
+function getSideHeroPosSelect() {
+    return sideHeroPosSelect
+}
+export {getSideHeroPosSelect};
 
-function createHeroInputs(heroInputs: HTMLInputElement[]) {
-    let input:HTMLInputElement;
+function createHeroInputs(heroInputs: ReactiveInput[]) {
+    let reactiveInput:ReactiveInput;
     
     for(let i: number = 0; i < 5; i++) {
-        input  = document.createElement("input");
-        input.type = "text";
-        input.className = "heroInput"
-        heroInputs.push(input);
+        reactiveInput  = new ReactiveInput;
+        heroInputs.push(reactiveInput);
     }
     
 }
@@ -32,7 +36,7 @@ interface SideButtons {
 
 export {SideButtons}
 
-function displaySelection(direHeroInputs : HTMLInputElement[], radientHeroInputs: HTMLInputElement[], sideButtons : SideButtons, mainDiv: HTMLDivElement) {
+function displaySelection(direHeroInputs : ReactiveInput[], radientHeroInputs: ReactiveInput[], sideButtons : SideButtons, mainDiv: HTMLDivElement) {
     let selectionDiv : HTMLDivElement = document.createElement("div");
     selectionDiv.className = "selectionDiv";
     let roles = ["carry" , "mid","offlaner","support", "hard support"]
@@ -46,12 +50,13 @@ function displaySelection(direHeroInputs : HTMLInputElement[], radientHeroInputs
     radientPart.appendChild(radientTitle);
 
     inputField = document.createElement("div");
+    
     inputField.className = "inputField";
 
     let label : HTMLLabelElement = document.createElement("label");
     label.textContent = "Side :"
     inputField.appendChild(label);
-
+    radientPart.id = 'inpf'
     inputField.appendChild(sideButtons.radient);
 
     radientPart.appendChild(inputField);
@@ -65,7 +70,7 @@ function displaySelection(direHeroInputs : HTMLInputElement[], radientHeroInputs
         label.textContent = role + " :"
 
         inputField.appendChild(label);
-        inputField.appendChild(radientHeroInputs[indx]);
+        radientHeroInputs[indx].draw(inputField);
         
         radientPart.appendChild(inputField);
     })
@@ -103,7 +108,7 @@ function displaySelection(direHeroInputs : HTMLInputElement[], radientHeroInputs
         label.textContent = role + " :"
 
         inputField.appendChild(label);
-        inputField.appendChild(direHeroInputs[indx]);
+        direHeroInputs[indx].draw(inputField);
         
         direPart.appendChild(inputField);
     })
@@ -282,15 +287,21 @@ function displayCounters(recomendations : Observable<Counter[]>, mainDiv : HTMLD
         countersTitle.textContent = "#Counters"
         countersDisplay.appendChild(countersTitle)
 
-        let countersRow : HTMLDivElement;
+        
         let icon : HTMLImageElement;
         let ime : HTMLParagraphElement;
         let counetrZa :HTMLSpanElement;
-        counters.forEach(counter =>{    
+        counters.forEach(async (counter) =>{   
+            let countersRow : HTMLDivElement;
             if(counter !== null) {
                 countersRow = document.createElement("div");
                 countersRow.className = "countersRow";
-
+                let resp = await fetch("http://localhost:3000/hero/?name="+counter.name);
+                let hero = (await resp.json())[0];
+                let nextPos$ = drawBackFaceRandomHero(hero,countersRow,true,false);
+                nextPos$.subscribe(pos=>{
+                    getSideHeroPosSelect().next([hero,pos]);
+                })
                 icon = document.createElement("img");
                 icon.src= counter.image
                 countersRow.appendChild(icon);
@@ -331,7 +342,8 @@ function displaySinergies(sinergies : Observable<Sinergy[]>, mainDiv : HTMLDivEl
             let sinergyRow : HTMLDivElement;
             let icon : HTMLImageElement;
             let ime : HTMLParagraphElement;
-            let quality: HTMLParagraphElement;
+            let quality: HTMLSpanElement;
+            
             sinergies.forEach(sinergy =>{    
                 if(sinergy !== null) {
                     sinergyRow = document.createElement("div");
@@ -345,12 +357,15 @@ function displaySinergies(sinergies : Observable<Sinergy[]>, mainDiv : HTMLDivEl
                     ime.textContent = sinergy.hero.name;
                     sinergyRow.appendChild(ime);
 
-                    quality = document.createElement("p");
+                    quality = document.createElement("span");
                     quality.textContent = sinergy.quality;
                     sinergyRow.appendChild(quality)
                     
-                
-
+                    
+                    let nextPos$ = drawBackFaceRandomHero(sinergy.hero,sinergyRow,true,true);
+                    nextPos$.subscribe(pos=>{
+                        getSideHeroPosSelect().next([sinergy.hero,pos]);
+                    })
                     sinergyDisplay.appendChild(sinergyRow);
                 }
                 
@@ -390,17 +405,33 @@ export {makeSideButton}
 
 
 function displayChance(chanceObs: Observable<number>, mainDiv:HTMLDivElement) {
-    let stats: HTMLParagraphElement = document.createElement("p");
+    let stats: HTMLDivElement = document.createElement("div");
     stats.style.textAlign="center"
-    mainDiv.appendChild(stats);
+    stats.className = 'stats'
+    let radientLine: HTMLDivElement = document.createElement("div");
+    let direLine: HTMLDivElement = document.createElement("div");
+    stats.appendChild(radientLine);
+    stats.appendChild(direLine);
 
-    chanceObs.subscribe(x=>{
-        if(x == -1) {
-            stats.textContent = `0% : 0%`
+    mainDiv.appendChild(stats);
+    
+    chanceObs.subscribe(chanceDire=>{
+        if(chanceDire == -1) {
+            direLine.textContent = '0%'
+            direLine.style.width = '50%'
+            radientLine.textContent = '0%'
+            radientLine.style.width = '50%';
             return
         }
-        stats.textContent = `${(100-x).toFixed(2)}% : ${x.toFixed(2)}%`;
-        
+        let radientPercents:string =  chanceDire === 100? "" :  `${(100-chanceDire).toFixed(2)}%`;
+        let direPercents:string =  chanceDire === 0 ? "" : `${chanceDire.toFixed(2)}%`;
+        radientLine.textContent = radientPercents;
+        radientLine.className ='radientLine';
+        radientLine.style.width = radientPercents;
+        direLine.textContent = direPercents;
+        direLine.className = 'direLine';
+        direLine.style.width = direPercents;
+               
     })
 }
 
@@ -422,33 +453,166 @@ function displayRandomHeroes(parrent: HTMLDivElement):HTMLDivElement{
 }
 
 function displayRandomHero(hero:Hero, parrent: HTMLDivElement){
- let heroInfoBig : HTMLDivElement = document.createElement("div");
- heroInfoBig.className = "heroInfoBig";
- 
- let heroImageBig: HTMLImageElement = document.createElement("img");
- heroImageBig.src = hero.image;
 
- heroInfoBig.appendChild(heroImageBig);
- let heroNameBig = document.createElement("p")
- heroNameBig.textContent = hero.name;
- heroInfoBig.appendChild(heroNameBig);
- parrent.appendChild(heroInfoBig);
+    let heroCard : HTMLDivElement = document.createElement("div");
+    heroCard.className = "heroCard";
+    let heroInfoBig : HTMLDivElement = document.createElement("div");
+    heroInfoBig.className = "heroInfoBig";
+
+    let heroImageBig: HTMLImageElement = document.createElement("img");
+    heroImageBig.src = hero.image;
+
+    heroInfoBig.appendChild(heroImageBig);
+    let heroNameBig = document.createElement("p")
+    heroNameBig.textContent = hero.name;
+    heroInfoBig.appendChild(heroNameBig);
+    heroCard.appendChild(heroInfoBig)
+    let heroPos = drawBackFaceRandomHero(hero,heroCard)
+
+    let selectRandomHeroButton = document.createElement("button");
+    selectRandomHeroButton.className = 'randomHeroSelectBtn'
+    selectRandomHeroButton.textContent = "Select";
+    heroCard.appendChild(selectRandomHeroButton);
+    parrent.appendChild(heroCard);
+
+    let fe = new Subject<Hero>();
+    selectRandomHeroButton.onclick = ()=>{
+        fe.next(hero);
+    }
+    return combineLatest([fe,heroPos]);
 }
+
+function drawBackFaceRandomHero(hero:Hero, parrent: HTMLDivElement,inSide:boolean = false, left:boolean=false) {
+    let backface = document.createElement("div");
+    backface.className = "heroCard__backface"
+    if(inSide && left) 
+        backface.classList.add("heroCard__backface--left")
+    if(inSide && !left)
+        backface.classList.add("heroCard__backface--right");
+    let characteristic: HTMLParagraphElement;
+    let spanLeft: HTMLSpanElement;
+    let spanRight: HTMLSpanElement;
+    let selectPos : HTMLInputElement;
+    let selectStatPos : HTMLDivElement = document.createElement("div");
+    selectStatPos.className = "selectStatPos"
+    let statBtn : HTMLButtonElement = document.createElement("button")
+    statBtn.className = "statBtn";
+    statBtn.textContent = 'Stats';
+    let posBtn : HTMLButtonElement = document.createElement("button")
+    posBtn.className = 'posBtn'
+    posBtn.textContent = 'Position'
+    
+    selectStatPos.appendChild(statBtn);
+
+    let posSubject$ = new Subject<string>();
+
+    selectStatPos.appendChild(posBtn);
+    backface.appendChild(selectStatPos)
+    let spanRightList : HTMLSpanElement[] = [];
+    let radioPosList: HTMLInputElement[] = [];
+    const no_pos = "no_pos";
+    let selectedPos = no_pos;
+    Object.keys(hero).forEach(key=>{
+        if(key !== "id" && key !== 'name' && key !== 'sinergies' && key !== 'image') {
+            characteristic = document.createElement("p");
+            spanLeft = document.createElement("span");
+            spanLeft.textContent = key+":";
+            spanLeft.className = 'span-left';
+            spanRight = document.createElement("span");
+            selectPos = document.createElement("input");
+            selectPos.type = "radio";
+            selectPos.name = "heroPos"+hero.id;
+            selectPos.value = key;
+            if(!inSide)
+                selectPos.onclick= ()=>{
+                    posSubject$.next(key);
+                }
+            else {
+                selectPos.onclick =()=>{
+                    selectedPos = key;
+                }
+            }
+            selectPos.style.display = "none"
+            spanRight.textContent = (hero as any)[key];
+            characteristic.appendChild(spanLeft);
+            characteristic.appendChild(spanRight);
+            spanRightList.push(spanRight);
+            characteristic.appendChild(selectPos)
+            radioPosList.push(selectPos);
+            backface.appendChild(characteristic);
+        }
+    })
+    let selectBtn = document.createElement("button");
+    selectBtn.className = "SelectInBackFace";
+    selectBtn.textContent = "select"
+    if(inSide) selectBtn.onclick = ()=>{
+        
+        posSubject$.next(selectedPos)
+    }
+    backface.appendChild(selectBtn);
+
+    statBtn.onclick = ()=>{
+        spanRightList.forEach(sp=>{
+            sp.style.display = "block";
+
+        })
+        radioPosList.forEach(p=>{
+            p.style.display = "none"
+        })
+    }
+    posBtn.onclick = ()=>{
+        spanRightList.forEach(sp=>{
+            sp.style.display = "none";
+
+        })
+        radioPosList.forEach(p=>{
+            p.style.display = "block"
+        })
+    }
+
+    parrent.appendChild(backface);
+    return posSubject$;
+}
+
+let selectHero$ = new Subject<[Hero,string]>();
 
 function displayRandomHeroesButton(parrent:HTMLDivElement){
 
     let button:HTMLButtonElement = document.createElement("button");
-    button.textContent ="Radnom Heroes"
-
+    let diceImg:HTMLImageElement = document.createElement("img");
+    diceImg.src = "../dice.png";
+    diceImg.className = "dice"
+    button.className = "radnomHeroesBtn"
+    button.appendChild(diceImg);
+    
     button.onclick = ()=>{
         
         let allHeroes : HTMLDivElement = displayRandomHeroes(parrent);
-        createRandomHeroObservable().subscribe(hero=>{
-            displayRandomHero(hero,allHeroes);
+
+        let allHeroesObs: Observable<[Hero, string]>[] = [];
+
+        let createRandomHeroes$ = createRandomHeroObservable();
+        
+        createRandomHeroes$.subscribe(hero=>{
+           allHeroesObs.push(displayRandomHero(hero,allHeroes));
         })
+        forkJoin(createRandomHeroes$)
+                .subscribe(
+                    ()=>{
+                        let e = merge(...allHeroesObs)
+                        
+                        e.subscribe(selHero=>{
+                            selectHero$.next(selHero);
+                        })
+                    }
+                )
+    
+
     }
 
     parrent.appendChild(button);
+    
+    return selectHero$;
 }
 
 export {displayRandomHeroesButton}
