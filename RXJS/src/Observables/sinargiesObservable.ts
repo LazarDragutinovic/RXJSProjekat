@@ -9,20 +9,23 @@ import { getHero } from "./heroObservable";
 
 function createSinargiesObservable(heroesObs: Observable<Hero[]>) : Observable<Sinergy[]> {
     let sinergies = heroesObs.pipe(map(getSinergies))
-    let sinergiesData = sinergies.pipe(switchMap(x=>getSinergiesData(x.allSinergies)))
+    let sinergiesData = sinergies.pipe(switchMap(sinergy=>getSinergiesData(sinergy.allSinergies)))
+    
+
     let combinedData = combineLatest([sinergies,sinergiesData]).pipe(
-        map(x=>{
+        map(sinergiesAndData=>{
+            
             let sinergies : Sinergy[] = [];
-            x[0].allSinergies.forEach(s=>{
-                let hero = x[1].find(x=>x.id == s);
+            sinergiesAndData[0].allSinergies.forEach(sinargyId=>{
+                let hero = sinergiesAndData[1].find(sinergyData=>sinergyData.id == sinargyId);
                 if(hero) {
                     sinergies.push({
                         hero,
-                        quality: x[0].qualities[s]
+                        quality: sinergiesAndData[0].qualities[sinargyId]
                     })
                 }
             })
-            console.log(sinergies,"OVO")
+            
             return sinergies
         })
     )
@@ -32,11 +35,7 @@ function createSinargiesObservable(heroesObs: Observable<Hero[]>) : Observable<S
 export {createSinargiesObservable}
 
 function getSinergiesData(sinergiesIds: number[]) {
-    let sinergies:Observable<Hero>[] = []
-    sinergiesIds.forEach(s=>{
-        sinergies.push(getHeroById(s))
-    })
-    return combineLatest(sinergies);
+    return combineLatest(sinergiesIds.map(sid=>getHeroById(sid)));
 }
 
 function getHeroById(id: number) {

@@ -3,16 +3,17 @@ import Counter from "../models/counter";
 import Hero from "../Models/hero";
 import { getCounter } from "./recomendationObservable";
 
-
+import {filterDuplikata} from "./heroObservable"
+import heroesAndCounters from "../models/heroesAndCounters";
 
 function createChanceObservable(direHeroesObs: Observable<Hero[]>, radientHeroObs: Observable<Hero[]>) : Observable<number>{
-    let heroes = combineLatest([direHeroesObs,radientHeroObs]).pipe(filter(x=>{
+    let heroes = combineLatest([direHeroesObs,radientHeroObs]).pipe(filter(heroes=>{
         let ponovljeno = false;
         for(let i = 0; i < 5; i++){
-            if(!x[0][i]) continue;
+            if(!heroes[0][i]) continue;
             for(let j = 0; j < 5; j++){
-                if(!x[1][j]) continue;
-                if(x[0][i].id == x[1][j].id) {
+                if(!heroes[1][j]) continue;
+                if(heroes[0][i].id == heroes[1][j].id) {
                     ponovljeno = true 
                     break
                 }
@@ -22,13 +23,13 @@ function createChanceObservable(direHeroesObs: Observable<Hero[]>, radientHeroOb
         }
         return !ponovljeno
     }));
-    let chance = heroes.pipe(
+    let counters = heroes.pipe(
         //preuzmi countere
-        map(x=>{
-            let heroes:Hero[] = [];
-            x[0].forEach(x=>heroes.push(x));
-            x[1].forEach(x=>heroes.push(x))
-            return heroes
+        map(heroes=>{
+            let heroesCombined:Hero[] = [];
+            heroes[0].forEach(hero=>heroesCombined.push(hero));
+            heroes[1].forEach(hero=>heroesCombined.push(hero));
+            return heroesCombined;
         }), 
         switchMap(heroes=>getAllCounters(heroes))
         //uporedi heroje
@@ -36,44 +37,54 @@ function createChanceObservable(direHeroesObs: Observable<Hero[]>, radientHeroOb
         //daj ocenu
     )
 
-    let provera = combineLatest([heroes,chance]).pipe(
-        map(x=>preracunajSansu(x)),
+    let heroesAndCounters$ = combineLatest([heroes,counters]).pipe(
+        map(transformToHeroesAndCounters),
+        map(heroesAndCounters=>preracunajSansu(heroesAndCounters)),
         startWith(0)
     )
-    return provera
+    return heroesAndCounters$;
 }
 
+function transformToHeroesAndCounters(data: [[Hero[],Hero[]], Counter[]]) {
+    
+    let heroesAndCounters : heroesAndCounters = {
+        direHeroes : data[0][0],
+        radientHeroes: data[0][1],
+        counters: data[1]
+    }
+    return heroesAndCounters;
+}
 
-function preracunajSansu(data: [[Hero[],Hero[]], Counter[]]){
-    let direheroes = data[0][0]
-    let radientheroes = data[0][1]
-    let counters = data[1]
+function preracunajSansu(heroesAndCounters: heroesAndCounters){
+    let direheroes = heroesAndCounters.direHeroes;
+    let radientheroes = heroesAndCounters.radientHeroes;
+    let counters = heroesAndCounters.counters
 
     let direChance = 0;
     let radientChance = 0;
-
+    const sinargyPoints: number = 40;
     direheroes.forEach(hero=>{
         if(!hero) return;
 
-        direheroes.forEach(dh=>{
-            if(dh && dh.id != hero.id) {
-                if(hero.sinergies.includes(dh.id)) direChance += 30;
+        direheroes.forEach(direhero=>{
+            if(direhero && direhero.id != hero.id) {
+                if(hero.sinergies.includes(direhero.id)) direChance += sinargyPoints;
             } 
         })
 
-        let counter = null;
-        for(let i = 0; i < 5; i++) {
-            if(counters[i] && counters[i].cid == hero.id) {
-                counter = counters[i]
+        let counterForHero = null;
+        for(let counter of counters) {
+            if(counter && counter.cid == hero.id) {
+                counterForHero = counter;
                 break;
             }
         }
-        if(counter){
-            for(let i = 0; i< 5;i++) {
-                if(radientheroes[i] && radientheroes[i].name == counter.name)
+        if(counterForHero){
+            for(let radientHero of radientheroes) {
+                if(radientHero && radientHero.name == counterForHero.name)
                 {
-                    radientChance += counter.wins;
-                    direChance += (100 - counter.wins)
+                    radientChance += counterForHero.wins;
+                    direChance += (100 - counterForHero.wins)
                     break; 
                 }
             }
@@ -84,25 +95,25 @@ function preracunajSansu(data: [[Hero[],Hero[]], Counter[]]){
     radientheroes.forEach(hero=>{
         if(!hero) return;
 
-        radientheroes.forEach(rh=>{
-            if(rh && rh.id != hero.id) {
-                if(hero.sinergies.includes(rh.id)) radientChance += 30;
+        radientheroes.forEach(radientHero=>{
+            if(radientHero && radientHero.id != hero.id) {
+                if(hero.sinergies.includes(radientHero.id)) radientChance += 30;
             } 
         })
 
-        let counter = null;
-        for(let i = 5; i < 10; i++) {
-            if(counters[i] && counters[i].cid == hero.id) {
-                counter = counters[i]
+        let counterForHero = null;
+        for(let counter of counters) {
+            if(counter && counter.cid == hero.id) {
+                counterForHero = counter;
                 break;
             }
         }
-        if(counter){
+        if(counterForHero){
             for(let i = 0; i< 5;i++) {
-                if(direheroes[i] && direheroes[i].name == counter.name)
+                if(direheroes[i] && direheroes[i].name == counterForHero.name)
                 {
-                    direChance += counter.wins;
-                    radientChance += (100 - counter.wins)
+                    direChance += counterForHero.wins;
+                    radientChance += (100 - counterForHero.wins)
                     break; 
                 }
             }
@@ -118,10 +129,5 @@ function preracunajSansu(data: [[Hero[],Hero[]], Counter[]]){
 export {createChanceObservable}
 
 function getAllCounters(heroes: Hero[]): Observable<Counter[]> {
-    let counters : Observable<Counter>[] = [];
-    heroes.forEach(hero=>{
-        counters.push(getCounter(hero))
-    })
-
-    return combineLatest(counters);
+    return combineLatest(heroes.map(hero=>getCounter(hero)));
 }

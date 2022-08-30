@@ -194,7 +194,7 @@ function drawBottomLane(radientHeroes: Hero[], direHeroes : Hero[], miniMap :HTM
 
     if(direHeroes[2] !== null) {
         let direOfflaner : HTMLImageElement = document.createElement("img");
-        if(radientHeroes[2]) direOfflaner.src =direHeroes[2].image;
+        if(direHeroes[2]) direOfflaner.src =direHeroes[2].image;
         else direOfflaner.src = "nohero.png"
         direOfflaner.className = "direOfflaner icon";
         miniMap.appendChild(direOfflaner);
@@ -441,12 +441,12 @@ function displayRandomHeroes(parrent: HTMLDivElement):HTMLDivElement{
     let allHeroes :HTMLDivElement = document.createElement("div");
     allHeroes.className = "radnomHeroes"
     parrent.appendChild(allHeroes);
-    let x :HTMLButtonElement = document.createElement("button");
-    x.textContent = "X";
-    x.className = "UkloniRandomHeroes";
-    allHeroes.appendChild(x)
+    let quitBtn :HTMLButtonElement = document.createElement("button");
+    quitBtn.textContent = "X";
+    quitBtn.className = "UkloniRandomHeroes";
+    allHeroes.appendChild(quitBtn)
 
-    x.onclick = ()=>{
+    quitBtn.onclick = ()=>{
         parrent.removeChild(allHeroes)
     }
     return allHeroes;
@@ -475,11 +475,11 @@ function displayRandomHero(hero:Hero, parrent: HTMLDivElement){
     heroCard.appendChild(selectRandomHeroButton);
     parrent.appendChild(heroCard);
 
-    let fe = new Subject<Hero>();
+    let selectedHero$= new Subject<Hero>();
     selectRandomHeroButton.onclick = ()=>{
-        fe.next(hero);
+        selectedHero$.next(hero);
     }
-    return combineLatest([fe,heroPos]);
+    return combineLatest([selectedHero$,heroPos]);
 }
 
 function drawBackFaceRandomHero(hero:Hero, parrent: HTMLDivElement,inSide:boolean = false, left:boolean=false) {
@@ -580,7 +580,7 @@ function displayRandomHeroesButton(parrent:HTMLDivElement){
 
     let button:HTMLButtonElement = document.createElement("button");
     let diceImg:HTMLImageElement = document.createElement("img");
-    diceImg.src = "../dice.png";
+    diceImg.src = "../RXJS/dice.png";
     diceImg.className = "dice"
     button.className = "radnomHeroesBtn"
     button.appendChild(diceImg);
@@ -596,16 +596,16 @@ function displayRandomHeroesButton(parrent:HTMLDivElement){
         createRandomHeroes$.subscribe(hero=>{
            allHeroesObs.push(displayRandomHero(hero,allHeroes));
         })
-        forkJoin(createRandomHeroes$)
-                .subscribe(
-                    ()=>{
-                        let e = merge(...allHeroesObs)
-                        
-                        e.subscribe(selHero=>{
-                            selectHero$.next(selHero);
-                        })
-                    }
-                )
+        forkJoin([createRandomHeroes$])
+        .subscribe(
+            ()=>{
+                let allHeroes = merge(...allHeroesObs)
+                
+                allHeroes.subscribe(selHero=>{
+                    selectHero$.next(selHero);
+                })
+            }
+        )
     
 
     }

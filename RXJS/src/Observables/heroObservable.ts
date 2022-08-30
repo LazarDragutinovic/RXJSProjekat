@@ -8,7 +8,7 @@ let startingHeroes:any[] = [null,null, null, null, null,null,null,null,null,null
 
 
 let filterDuplikata = (heroes: Hero[])=>{
-    console.log(heroes);
+    
     for(let i = 0; i < heroes.length-1; i++) {
         if(!heroes[i]) continue;
         for(let j = 0; j < heroes.length;j++) {
@@ -20,6 +20,8 @@ let filterDuplikata = (heroes: Hero[])=>{
     }   
     return true;
 }
+
+export {filterDuplikata}
 
 export function createAllReactiveHeroObservables(inputs: ReactiveInput[] ): Observable<Hero[]>{
     let reactiveHeroObservables$ = inputs.map(input=> input.getHeroObs());
@@ -41,14 +43,14 @@ function createAllHeroesObservables(inps: ReactiveInput[]) : Observable<Hero[]> 
         allObservables.push(inps[i].getHeroObs());
     }
 
-    return combineLatest(allObservables).pipe(startWith(startingHeroes),filter(x=>{
+    return combineLatest(allObservables).pipe(startWith(startingHeroes),filter(heroes=>{
         let ponovljeno = false;
         for(let i = 0; i < 5; i++) {
-            if(!x[i]) continue;
+            if(!heroes[i]) continue;
             for(let j = 0 ; j<5; j++) {
-                if(!x[j]) continue
+                if(!heroes[j]) continue
                 if( i == j ) continue;
-                if(x[i].id == x[j].id) {
+                if(heroes[i].id == heroes[j].id) {
                     ponovljeno = true;
                     break;
                 }

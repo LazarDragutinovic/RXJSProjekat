@@ -1,6 +1,5 @@
 import { combineLatest, merge, Observable, Subject } from "rxjs";
 import drawChart from "./charts";
-import MiniGame from "./components/MiniGame";
 import ReactiveInput from "./components/ReactiveInput";
 import Hero from "./Models/hero";
 import { Side } from "./models/side";
@@ -21,8 +20,7 @@ import { createHeroInputs, displayChance, displayCounters, displayMap, displayRa
 
 
 
-let direHeroInputs : HTMLInputElement[] = [];
-let radientHeroInputs: HTMLInputElement[] =[];
+
 
 let direHeroReactiveInputs: ReactiveInput[] = [];
 
@@ -41,8 +39,7 @@ createHeroInputs(radientHeroReactiveInputs);
 
 let direHeroObservables : Observable<Hero[]> = createAllReactiveHeroObservables(direHeroReactiveInputs);
 let radientHeroObservables : Observable<Hero[]>  = createAllReactiveHeroObservables(radientHeroReactiveInputs);
-direHeroObservables.subscribe(heros=>console.log(heros));
-direHeroObservables.subscribe(x=>console.log(x));
+
 let state = createStateObservable(direHeroObservables, radientHeroObservables, sideObs)
 let stateInverse = createStateObservableInverse(direHeroObservables,radientHeroObservables,sideObs);
 let recomendations = createRecomendations(state);
@@ -51,6 +48,7 @@ let sides : SideButtons = {dire: direSideButton, radient: radientSideButton};
 let mainDiv : HTMLDivElement = document.createElement("div");
 
 mainDiv.className = "mainDiv";
+
 let observableData : HTMLDivElement = document.createElement("div");
 observableData.className = "observableData";
 let chanceObs :Observable<number> = createChanceObservable(direHeroObservables,radientHeroObservables);

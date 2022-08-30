@@ -88,6 +88,15 @@ body {
     background-color: rgb(47, 255, 154);
     color: white;
     padding: 4px;
+    width: 200px;
     font-size: 18px;
+    transition: 0.4s background-color;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
     font-weight: 800;
+}
+.show-stat-btn--red {
+    background-color: rgb(233, 68, 68);   
 }

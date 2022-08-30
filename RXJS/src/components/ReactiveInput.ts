@@ -5,7 +5,7 @@ import { getHero, getHeroById } from "../Observables/heroObservable";
 
 const invalid_hero_id: string = "-1024";
 const select_active: string = 'reactive-input__select--active';
-
+const spanX_active: string = 'reactive-input__span--active';
 export default class ReactiveInput {
     
     private heroIdObs$: Subject<string>;
@@ -13,17 +13,28 @@ export default class ReactiveInput {
     private input: HTMLInputElement;
     private select: HTMLSelectElement;
     private hero$: Observable<Hero>;
+    private spanX: HTMLSpanElement;
     constructor(){
         this.input = document.createElement('input');
         this.select = document.createElement('select');
         this.element = document.createElement('div');
         this.element.className = 'reactive-input';
         this.input.className = 'reactive-input__input';
-        this.select.className = 'reactive-input__select';        
+        this.select.className = 'reactive-input__select';     
+        this.spanX = document.createElement("span");
+        this.spanX.textContent = "X"
+        this.spanX.className = 'reactive-input__span'
+        this.spanX.onclick = ()=>{
+            this.input.value = '';
+            if(this.spanX.classList.contains(spanX_active))
+                this.spanX.classList.remove(spanX_active);
+            this.heroIdObs$.next("-1");
+        }
     }
     draw(parent: HTMLDivElement) {
         this.element.appendChild(this.input);
         this.element.appendChild(this.select);
+        this.element.appendChild(this.spanX)
         parent.appendChild(this.element);
     }
 
@@ -59,7 +70,9 @@ export default class ReactiveInput {
         }
         this.hero$ =  this.heroIdObs$.pipe(switchMap(getHeroById), map(heros => heros.length > 0 ? heros[0]: null));
         this.hero$.subscribe(hero=>{
+            if(!hero) return;
             this.input.value = hero.name;
+            this.spanX.classList.add(spanX_active);
         })
         return this.hero$.pipe(startWith(null));
     }
@@ -68,8 +81,14 @@ export default class ReactiveInput {
     setHeroId(id: string){
         this.heroIdObs$.next(id);
     }
+
+    
+
     createHeroListObs(): Observable<Hero[]> {
         let no_hero = "__no__hero__"
+
+
+
         return fromEvent(this.input,'input')
                 .pipe(debounceTime(500),map((event: InputEvent)=> (<HTMLInputElement>event.target).value),
                     map((hero)=>hero.length == 0 ? no_hero : hero),
